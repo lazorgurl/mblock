@@ -51,11 +51,9 @@ blocked_domains = HTTParty.get("#{URL_BASE}admin/domain_blocks", headers: {
 
 case ARGV[0]
 when "dump"
-  File.open("blocked_domains.gz", 'r') { |f| 
-    compressed = f.read
-    print Zlib::Inflate.inflate(compressed)
+  Zlib::GzipReader.open('blocked_domains.json.gz') {|gz|
+    print gz.read
   }
-
 when "fetch"
   registry = HTTParty.get(
     "#{REGISTRY_URL_BASE}domains",
@@ -67,6 +65,13 @@ when "fetch"
   apply_domain_blocks(blocked_domains, domains_to_block)
 
 when "share"
+  blocked_domains.select{
+    |domain, details| details[:comment] == ""
+  }.each { |domain, details|
+    print "#{domain} didn't specify a comment. Not sharing to registry.\n"
+  }
+  blocked_domains.reject!{|domain, details| details[:comment] == ""}
+
   compressed = Zlib::Deflate.deflate(blocked_domains.to_json)
   patch = HTTParty.patch(
     "#{REGISTRY_URL_BASE}domains", 
@@ -80,16 +85,28 @@ when "share"
     exit 1
   end
 when "export"
-  File.open("blocked_domains.gz", 'w') { |f| 
-    compressed = Zlib::Deflate.deflate(blocked_domains.to_json)
-    f.write compressed
+  Zlib::GzipWriter.open('blocked_domains.json.gz') {|gz|    
+    gz.write blocked_domains.to_json
   }
 when "import"
-  File.open("blocked_domains.gz", 'r') { |f| 
-    compressed = f.read
-    loaded_domain_blocks = JSON.parse(Zlib::Inflate.inflate(compressed))
+  Zlib::GzipReader.open('blocked_domains.json.gz') {|gz|
+    loaded_domain_blocks = JSON.parse(gz.read)
     apply_domain_blocks(blocked_domains, loaded_domain_blocks)
   }
 else
-  print "Usage: mblock (export|import|share|fetch|dump)"
+  print """Usage: mblock (export|import|share|fetch|dump)
+    Environment variables:
+    
+      MASTO_TOKEN (required)
+      MASTO_DOMAIN (required) e.g. mastodon.social
+      MBLOCK_REGISTRY_URL (default: https://mblock.toot.lgbt/)
+
+    Commands:
+
+      export - Exports blocked_domains.json.gz from your server's API.
+      import - Imports blocked_domains.json.gz to your server's blocklist. Doesn't override existing domains.
+      dump - Dumps blocked_domains.json.gz to stdout.
+      fetch - Fetches the blocklist hosted on the registry and imports it.
+      share - Shares your blocklist to the registry. Doesn't override existing domains. Approval required for your domain.
+ \n"""
 end
