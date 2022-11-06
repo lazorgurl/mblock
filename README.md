@@ -21,7 +21,7 @@ MASTO_DOMAIN=<your.domain> MASTO_TOKEN=<your_token> ./mblock export
 To import blocks for instances from an archive, skipping instances that you already have blocked:
 
 ```
-MASTO_DOMAIN=<your.domain> MASTO_TOKEN=<your_token> ./mblock export
+MASTO_DOMAIN=<your.domain> MASTO_TOKEN=<your_token> ./mblock import
 ```
 
 _NB: the archive must be called blocked_domains.gz_
