@@ -18,13 +18,61 @@ if INSTANCE_DOMAIN.nil? then
   exit 1
 end
 
+registry = ENV['MBLOCK_REGISTRY_URL']
+if registry.nil? then
+  registry = "https://mblock.toot.lgbt/"
+end
+REGISTRY_URL_BASE = registry
+
 URL_BASE = "https://#{INSTANCE_DOMAIN}/api/v1/"  
 
+def apply_domain_blocks(blocked_domains, domains_to_block)
+  domains_to_block = domains_to_block.reject {|k, v| blocked_domains.keys.include?(k)}
+
+  domains_to_block.each do |domain, details|    
+    print "Adding block for #{domain} with severity #{details['severity']} and comment \"#{details['comment']}\"\n"
+    post = HTTParty.post("#{URL_BASE}admin/domain_blocks", query: {
+      domain: domain, 
+      severity: details['severity'], 
+      private_comment: details['comment']
+    }, headers: {
+      Authorization: "bearer #{ACCESS_TOKEN}",
+    })
+    if post.response.code.to_i != 200 then
+      print "#{patch.response.code.to_i} #{patch.response.body}\n"
+    end
+  end
+end
+
 blocked_domains = HTTParty.get("#{URL_BASE}admin/domain_blocks", headers: {
-  Authorization: "bearer #{ACCESS_TOKEN}"
+  Authorization: "bearer #{ACCESS_TOKEN}",
+  Accept: "application/gzip"
 }).map{ |entry| [entry['domain'], {comment: entry['private_comment'], severity: entry['severity']}]}.to_h
 
 case ARGV[0]
+when "fetch"
+  registry = HTTParty.get(
+    "#{REGISTRY_URL_BASE}domains",
+    headers: {
+      Accept: "application/gzip"
+    } 
+  )
+  domains_to_block = JSON.parse(Zlib::Inflate.inflate(registry.body))
+  apply_domain_blocks(blocked_domains, domains_to_block)
+
+when "share"
+  compressed = Zlib::Deflate.deflate(blocked_domains.to_json)
+  patch = HTTParty.patch(
+    "#{REGISTRY_URL_BASE}domains", 
+    query: {domain: INSTANCE_DOMAIN}, 
+    headers: {Authorization: "bearer #{ACCESS_TOKEN}", "Content-Type": "application/gzip"}, 
+    body: compressed
+  )
+
+  if patch.response.code.to_i != 200 then
+    print "#{patch.response.code.to_i} #{patch.response.body}\n"
+    exit 1
+  end
 when "export"
   File.open("blocked_domains.gz", 'w') { |f| 
     compressed = Zlib::Deflate.deflate(blocked_domains.to_json)
@@ -34,19 +82,8 @@ when "import"
   File.open("blocked_domains.gz", 'r') { |f| 
     compressed = f.read
     loaded_domain_blocks = JSON.parse(Zlib::Inflate.inflate(compressed))
-  
-  
-    domains_to_block = loaded_domain_blocks.keys - blocked_domains.keys
-  
-    domains_to_block.each do |domain| 
-      severity = loaded_domain_blocks[domain]['severity']
-      comment = loaded_domain_blocks[domain]['comment']      
-      print "Adding block for #{domain} with severity #{severity} and comment \"#{comment}\"\n"
-      HTTParty.post("#{URL_BASE}admin/domain_blocks", query: {domain: domain, severity: severity, private_comment: comment}, headers: {
-        Authorization: "bearer #{ACCESS_TOKEN}"
-      })
-    end
+    apply_domain_blocks(blocked_domains, loaded_domain_blocks)
   }
 else
-  print "Usage: mblock (export|import)"
+  print "Usage: mblock (export|import|share|fetch)"
 end
