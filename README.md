@@ -37,7 +37,7 @@ MASTO_DOMAIN=<your.domain> MASTO_TOKEN=<your_token> ./mblock fetch
 
 ### Share
 
-Share your blocklist with the mblock registry. **This is open to approved domains only. To get approved for mblock contributions, please reach out to @admin@toot.lgbt**.
+Share your blocklist with the mblock registry. **This is open to approved domains only. To get approved for mblock contributions, please reach out to [@admin@toot.lgbt](https://toot.lgbt/@admin)**.
 
 ```
 MASTO_DOMAIN=<your.domain> MASTO_TOKEN=<your_token> ./mblock share
