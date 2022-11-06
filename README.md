@@ -36,7 +36,7 @@ To import blocks for instances from an archive, skipping instances that you alre
 MASTO_DOMAIN=<your.domain> MASTO_TOKEN=<your_token> ./mblock import
 ```
 
-_NB: the archive must be called blocked_domains.gz_
+_NB: the archive must be called blocked_domains.json.gz_
 
 ### Fetch
 
