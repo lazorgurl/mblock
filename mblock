@@ -19,7 +19,7 @@ if INSTANCE_DOMAIN.nil? then
 end
 
 registry = ENV['MBLOCK_REGISTRY_URL']
-if INSTANCE_DOMAIN.nil? then
+if registry.nil? then
   registry = "https://mblock.toot.lgbt/"
 end
 REGISTRY_URL_BASE = registry
@@ -39,7 +39,7 @@ def apply_domain_blocks(blocked_domains, domains_to_block)
       Authorization: "bearer #{ACCESS_TOKEN}",
     })
     if post.response.code.to_i != 200 then
-      return [post.response.code.to_i, post.response.body]
+      print "#{patch.response.code.to_i} #{patch.response.body}\n"
     end
   end
 end
@@ -62,12 +62,17 @@ when "fetch"
 
 when "share"
   compressed = Zlib::Deflate.deflate(blocked_domains.to_json)
-  HTTParty.patch(
+  patch = HTTParty.patch(
     "#{REGISTRY_URL_BASE}domains", 
     query: {domain: INSTANCE_DOMAIN}, 
     headers: {Authorization: "bearer #{ACCESS_TOKEN}", "Content-Type": "application/gzip"}, 
     body: compressed
   )
+
+  if patch.response.code.to_i != 200 then
+    print "#{patch.response.code.to_i} #{patch.response.body}\n"
+    exit 1
+  end
 when "export"
   File.open("blocked_domains.gz", 'w') { |f| 
     compressed = Zlib::Deflate.deflate(blocked_domains.to_json)
