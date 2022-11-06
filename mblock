@@ -50,6 +50,12 @@ blocked_domains = HTTParty.get("#{URL_BASE}admin/domain_blocks", headers: {
 }).map{ |entry| [entry['domain'], {comment: entry['private_comment'], severity: entry['severity']}]}.to_h
 
 case ARGV[0]
+when "dump"
+  File.open("blocked_domains.gz", 'r') { |f| 
+    compressed = f.read
+    print Zlib::Inflate.inflate(compressed)
+  }
+
 when "fetch"
   registry = HTTParty.get(
     "#{REGISTRY_URL_BASE}domains",
