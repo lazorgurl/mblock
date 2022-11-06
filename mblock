@@ -91,5 +91,5 @@ when "import"
     apply_domain_blocks(blocked_domains, loaded_domain_blocks)
   }
 else
-  print "Usage: mblock (export|import|share|fetch)"
+  print "Usage: mblock (export|import|share|fetch|dump)"
 end
