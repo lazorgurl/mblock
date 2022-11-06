@@ -65,6 +65,13 @@ when "fetch"
   apply_domain_blocks(blocked_domains, domains_to_block)
 
 when "share"
+  blocked_domains.select{
+    |domain, details| details[:comment] == ""
+  }.each { |domain, details|
+    print "#{domain} didn't specify a comment. Not sharing to registry.\n"
+  }
+  blocked_domains.reject!{|domain, details| details[:comment] == ""}
+  
   compressed = Zlib::Deflate.deflate(blocked_domains.to_json)
   patch = HTTParty.patch(
     "#{REGISTRY_URL_BASE}domains", 
