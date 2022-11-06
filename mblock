@@ -18,8 +18,13 @@ if INSTANCE_DOMAIN.nil? then
   exit 1
 end
 
+registry = ENV['MBLOCK_REGISTRY_URL']
+if INSTANCE_DOMAIN.nil? then
+  registry = "https://mblock.toot.lgbt/"
+end
+REGISTRY_URL_BASE = registry
+
 URL_BASE = "https://#{INSTANCE_DOMAIN}/api/v1/"  
-REGISTRY_URL_BASE = "https://mblock.toot.lgbt/"
 
 def apply_domain_blocks(blocked_domains, domains_to_block)
   domains_to_block = domains_to_block.reject {|k, v| blocked_domains.keys.include?(k)}
@@ -31,7 +36,7 @@ def apply_domain_blocks(blocked_domains, domains_to_block)
       severity: details['severity'], 
       private_comment: details['comment']
     }, headers: {
-      Authorization: "bearer #{ACCESS_TOKEN}"
+      Authorization: "bearer #{ACCESS_TOKEN}",
     })
     if post.response.code.to_i != 200 then
       return [post.response.code.to_i, post.response.body]
@@ -40,13 +45,17 @@ def apply_domain_blocks(blocked_domains, domains_to_block)
 end
 
 blocked_domains = HTTParty.get("#{URL_BASE}admin/domain_blocks", headers: {
-  Authorization: "bearer #{ACCESS_TOKEN}"
+  Authorization: "bearer #{ACCESS_TOKEN}",
+  Accept: "application/gzip"
 }).map{ |entry| [entry['domain'], {comment: entry['private_comment'], severity: entry['severity']}]}.to_h
 
 case ARGV[0]
 when "fetch"
   registry = HTTParty.get(
-    "#{REGISTRY_URL_BASE}domains", 
+    "#{REGISTRY_URL_BASE}domains",
+    headers: {
+      Accept: "application/gzip"
+    } 
   )
   domains_to_block = JSON.parse(Zlib::Inflate.inflate(registry.body))
   apply_domain_blocks(blocked_domains, domains_to_block)
