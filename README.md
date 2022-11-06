@@ -22,7 +22,7 @@ MASTO_DOMAIN=<your.domain> MASTO_TOKEN=<your_token> ./mblock export
 
 ### Dump
 
-Dump a local `blocked_domains.gz` to JSON
+Dump a local `blocked_domains.json.gz` to JSON
 
 ```
 MASTO_DOMAIN=<your.domain> MASTO_TOKEN=<your_token> ./mblock dump
