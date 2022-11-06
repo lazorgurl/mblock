@@ -10,7 +10,7 @@ See the source code for the registry: [mblock-registry](https://github.com/lazor
 
 Generate an access token for `mblock` with admin read and write scopes in `Preferences > Development > New Application`. This must have `read` and `admin:read` scopes to export and share blocklists. `admin:write` is required to fetch and import.
 
-If you're sharing your blocklist, I strongly recommend you use a token without `admin:write` since this token is forwarded to the registry to validate your domain.
+If you're sharing your blocklist, I strongly recommend you use a token without `admin:write` since this token is forwarded to the registry to verify your domain.
 
 ### Export
 
