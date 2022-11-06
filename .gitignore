@@ -1,5 +1,5 @@
 blocked_domains.gz
-
+.vscode
 *.gem
 *.rbc
 /.config
