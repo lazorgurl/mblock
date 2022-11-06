@@ -1,3 +1,5 @@
+blocked_domains.gz
+
 *.gem
 *.rbc
 /.config
