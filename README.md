@@ -1,6 +1,6 @@
 # MBlock: simple instance blocklist management for Mastodon
 
-See the source code for the registry: [mblock-registry](https://github.com/lazorgurl/mblock-registry)
+See the source code for the registry: [mblock-registry](https://github.com/lazorgurl/mblock-register)
 
 **Requires Mastodon v4.0.0-rc1 or greater**
 
