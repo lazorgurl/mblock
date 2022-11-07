@@ -40,7 +40,7 @@ _NB: the archive must be called blocked_domains.json.gz_
 
 ### Fetch
 
-To import blocks for instances from the mblock registry (view these blocks at [https://mblock.toot.lgbt/domains](https://mblock.toot.lgbt/domains), skipping instances that you already have blocked:
+To import blocks for instances from the mblock registry (view these blocks at [https://mblock.toot.lgbt/domains](https://mblock.toot.lgbt/domains)), skipping instances that you already have blocked:
 
 ```
 MASTO_DOMAIN=<your.domain> MASTO_TOKEN=<your_token> ./mblock fetch
