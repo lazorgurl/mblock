@@ -27,7 +27,7 @@ REGISTRY_URL_BASE = registry
 URL_BASE = "https://#{INSTANCE_DOMAIN}/api/v1/"  
 
 def apply_domain_blocks(blocked_domains, domains_to_block)
-  domains_to_block = domains_to_block.reject {|k, v| blocked_domains.keys.include?(k)}
+  domains_to_block.reject! {|k, v| blocked_domains.keys.include?(k)}
 
   domains_to_block.each do |domain, details|    
     print "Adding block for #{domain} with severity #{details['severity']} and comment \"#{details['comment']}\"\n"
@@ -39,15 +39,35 @@ def apply_domain_blocks(blocked_domains, domains_to_block)
       Authorization: "bearer #{ACCESS_TOKEN}",
     })
     if post.response.code.to_i != 200 then
-      print "#{patch.response.code.to_i} #{patch.response.body}\n"
+      print "#{post.response.code.to_i} #{post.response.body}\n"
     end
   end
 end
 
-blocked_domains = HTTParty.get("#{URL_BASE}admin/domain_blocks", headers: {
-  Authorization: "bearer #{ACCESS_TOKEN}",
-  Accept: "application/gzip"
-}).map{ |entry| [entry['domain'], {comment: entry['private_comment'], severity: entry['severity']}]}.to_h
+
+def get_blocked_domains
+  blocked_domains = {}
+  cursor = 0
+  get = HTTParty.get("#{URL_BASE}admin/domain_blocks", headers: {
+    Authorization: "bearer #{ACCESS_TOKEN}",
+    Accept: "application/gzip"
+  }, query: {limit: 200, min_id: cursor})
+  
+  bd = get.map{ |entry| [entry['domain'], {comment: entry['private_comment'], severity: entry['severity']}]}.to_h
+  blocked_domains.merge!(bd)
+  while bd.size == 200 do
+    cursor += 200
+    get = HTTParty.get("#{URL_BASE}admin/domain_blocks", headers: {
+      Authorization: "bearer #{ACCESS_TOKEN}",
+      Accept: "application/gzip"
+    }, query: {limit: 200, min_id: cursor})
+    bd = get.map{ |entry| [entry['domain'], {comment: entry['private_comment'], severity: entry['severity']}]}.to_h
+    blocked_domains.merge!(bd)
+  end
+  print "Found #{blocked_domains.size} domains in the list\n"
+  return blocked_domains
+end
+
 
 case ARGV[0]
 when "dump"
@@ -62,9 +82,10 @@ when "fetch"
     } 
   )
   domains_to_block = JSON.parse(Zlib::Inflate.inflate(registry.body))
-  apply_domain_blocks(blocked_domains, domains_to_block)
+  apply_domain_blocks(get_blocked_domains, domains_to_block)
 
 when "share"
+  blocked_domains = get_blocked_domains()
   blocked_domains.select{
     |domain, details| details[:comment] == ""
   }.each { |domain, details|
@@ -86,12 +107,12 @@ when "share"
   end
 when "export"
   Zlib::GzipWriter.open('blocked_domains.json.gz') {|gz|    
-    gz.write blocked_domains.to_json
+    gz.write get_blocked_domains.to_json
   }
 when "import"
   Zlib::GzipReader.open('blocked_domains.json.gz') {|gz|
     loaded_domain_blocks = JSON.parse(gz.read)
-    apply_domain_blocks(blocked_domains, loaded_domain_blocks)
+    apply_domain_blocks(get_blocked_domains, loaded_domain_blocks)
   }
 else
   print """Usage: mblock (export|import|share|fetch|dump)

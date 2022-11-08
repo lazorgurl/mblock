@@ -1,4 +1,4 @@
-blocked_domains.gz
+blocked_domains.json.gz
 .vscode
 *.gem
 *.rbc
